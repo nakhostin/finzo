@@ -10,12 +10,14 @@ import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { KeepOpenToggle } from "@/components/ui/keep-open-toggle";
 import { listCategories } from "@/db/repositories/categories";
 import { listAccounts } from "@/db/repositories/accounts";
 import { listPeople, addPerson } from "@/db/repositories/people";
 import { addRecurringItem, updateRecurringItem } from "@/db/repositories/recurringItems";
 import { ensureYearsGenerated } from "@/domain/recurrence";
 import { today, MONTH_NAMES_FA } from "@/domain/jalali";
+import { useUiStore } from "@/stores/uiStore";
 import type { RecurringItem, ItemType, JalaliDate } from "@/types/entities";
 
 const ITEM_TYPE_OPTIONS: Array<{ value: ItemType; label: string }> = [
@@ -112,6 +114,8 @@ export function RecurringItemForm({ open, onOpenChange, item, defaultDate, onSav
   const accounts = useLiveQuery(() => listAccounts(), []) ?? [];
   const people = useLiveQuery(() => listPeople(), [], []) ?? [];
   const [newPersonName, setNewPersonName] = useState("");
+  const keepOpen = useUiStore((s) => s.keepFormOpen);
+  const setKeepOpen = useUiStore((s) => s.setKeepFormOpen);
 
   const {
     register,
@@ -119,6 +123,7 @@ export function RecurringItemForm({ open, onOpenChange, item, defaultDate, onSav
     control,
     watch,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
@@ -168,6 +173,32 @@ export function RecurringItemForm({ open, onOpenChange, item, defaultDate, onSav
 
     const years = [today().year, values.startYear, values.hasEnd && values.endYear ? values.endYear : today().year];
     await ensureYearsGenerated(years);
+
+    if (!item && keepOpen) {
+      // Keep the type/category/account/person/dates so a batch can be entered quickly.
+      reset({
+        title: "",
+        type: values.type,
+        categoryId: values.categoryId,
+        personId: values.personId,
+        accountId: values.accountId,
+        priority: values.priority,
+        dueDay: values.dueDay,
+        defaultAmount: 0,
+        frequency: values.frequency,
+        startYear: values.startYear,
+        startMonth: values.startMonth,
+        hasEnd: values.hasEnd,
+        endYear: values.endYear,
+        endMonth: values.endMonth,
+        hasSchedule: false,
+        scheduleText: "",
+        reminderDaysBefore: values.reminderDaysBefore,
+        notes: "",
+      });
+      setFocus("title");
+      return;
+    }
 
     onSaved();
     onOpenChange(false);
@@ -393,13 +424,16 @@ export function RecurringItemForm({ open, onOpenChange, item, defaultDate, onSav
           <Textarea rows={2} {...register("notes")} />
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-            انصراف
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {item ? "ذخیره تغییرات" : "افزودن"}
-          </Button>
+        <div className="flex items-center justify-between gap-2 pt-2">
+          {item ? <span /> : <KeepOpenToggle checked={keepOpen} onCheckedChange={setKeepOpen} />}
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+              انصراف
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {item ? "ذخیره تغییرات" : "افزودن"}
+            </Button>
+          </div>
         </div>
       </form>
     </Dialog>

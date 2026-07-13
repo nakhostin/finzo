@@ -8,9 +8,11 @@ import { Input, Textarea } from "@/components/ui/input";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select";
+import { KeepOpenToggle } from "@/components/ui/keep-open-toggle";
 import { JalaliDateField } from "@/components/JalaliDateField";
 import { addLot } from "@/db/repositories/assets";
 import { today } from "@/domain/jalali";
+import { useUiStore } from "@/stores/uiStore";
 import type { JalaliDate } from "@/types/entities";
 
 const schema = z.object({
@@ -37,11 +39,15 @@ interface LotFormProps {
 }
 
 export function LotForm({ open, onOpenChange, assetTypeId, unit, onSaved }: LotFormProps) {
+  const keepOpen = useUiStore((s) => s.keepFormOpen);
+  const setKeepOpen = useUiStore((s) => s.setKeepFormOpen);
+
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
@@ -69,6 +75,14 @@ export function LotForm({ open, onOpenChange, assetTypeId, unit, onSaved }: LotF
       jalaliDate: values.jalaliDate,
       notes: values.notes || undefined,
     });
+
+    if (keepOpen) {
+      // Keep the transaction type and date so a batch can be entered quickly.
+      reset({ direction: values.direction, quantity: 0, unitPrice: 0, jalaliDate: values.jalaliDate, notes: "" });
+      setFocus("quantity");
+      return;
+    }
+
     onSaved();
     onOpenChange(false);
   };
@@ -127,13 +141,16 @@ export function LotForm({ open, onOpenChange, assetTypeId, unit, onSaved }: LotF
           <Textarea rows={2} {...register("notes")} />
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-            انصراف
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            ثبت تراکنش
-          </Button>
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <KeepOpenToggle checked={keepOpen} onCheckedChange={setKeepOpen} />
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+              انصراف
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              ثبت تراکنش
+            </Button>
+          </div>
         </div>
       </form>
     </Dialog>

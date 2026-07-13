@@ -151,6 +151,8 @@ export interface ShoppingItem {
   status: ShoppingStatus;
   priority: number;
   categoryId?: ID;
+  targetJalaliYear?: number; // ماه هدف خرید — برای طبقه‌بندی لیست به تفکیک ماه
+  targetJalaliMonth?: number; // 1-12
   addedJalaliDate: JalaliDate;
   purchasedJalaliDate?: JalaliDate;
   notes?: string;

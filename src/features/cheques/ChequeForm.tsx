@@ -9,11 +9,13 @@ import { Input, Textarea } from "@/components/ui/input";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select";
+import { KeepOpenToggle } from "@/components/ui/keep-open-toggle";
 import { JalaliDateField } from "@/components/JalaliDateField";
 import { listAccounts } from "@/db/repositories/accounts";
 import { listPeople, addPerson } from "@/db/repositories/people";
 import { addCheque, updateCheque } from "@/db/repositories/cheques";
 import { today } from "@/domain/jalali";
+import { useUiStore } from "@/stores/uiStore";
 import type { Cheque, ChequeDirection, JalaliDate } from "@/types/entities";
 
 const jalaliDateSchema = z.object({
@@ -83,12 +85,15 @@ export function ChequeForm({ open, onOpenChange, cheque, defaultPersonId, defaul
   const accounts = useLiveQuery(() => listAccounts(), [], []);
   const people = useLiveQuery(() => listPeople(), [], []);
   const [newPersonName, setNewPersonName] = useState("");
+  const keepOpen = useUiStore((s) => s.keepFormOpen);
+  const setKeepOpen = useUiStore((s) => s.setKeepFormOpen);
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
@@ -117,6 +122,24 @@ export function ChequeForm({ open, onOpenChange, cheque, defaultPersonId, defaul
     } else {
       await addCheque(payload);
     }
+
+    if (!cheque && keepOpen) {
+      // Keep the account/direction/dates so several cheques can be entered quickly.
+      reset({
+        chequeNumber: "",
+        accountId: values.accountId,
+        direction: values.direction,
+        counterpartyPersonId: values.counterpartyPersonId,
+        amount: 0,
+        issueJalaliDate: values.issueJalaliDate,
+        dueJalaliDate: values.dueJalaliDate,
+        reminderDaysBefore: values.reminderDaysBefore,
+        notes: "",
+      });
+      setFocus("chequeNumber");
+      return;
+    }
+
     onSaved();
     onOpenChange(false);
   };
@@ -238,13 +261,16 @@ export function ChequeForm({ open, onOpenChange, cheque, defaultPersonId, defaul
           <Textarea rows={2} {...register("notes")} />
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-            انصراف
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {cheque ? "ذخیره تغییرات" : "افزودن"}
-          </Button>
+        <div className="flex items-center justify-between gap-2 pt-2">
+          {cheque ? <span /> : <KeepOpenToggle checked={keepOpen} onCheckedChange={setKeepOpen} />}
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+              انصراف
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {cheque ? "ذخیره تغییرات" : "افزودن"}
+            </Button>
+          </div>
         </div>
       </form>
     </Dialog>

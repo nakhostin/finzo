@@ -69,5 +69,39 @@ export class AppDatabase extends Dexie {
       jalaliYears: "year",
       appSettings: "key",
     });
+
+    // v3: adds a target purchase month to shopping items so the list can be
+    // grouped per month. Existing rows are backfilled from their purchase date
+    // (or the date they were added if not yet purchased).
+    this.version(3)
+      .stores({
+        categories: "id, parentId, kind, isArchived",
+        people: "id, isActive",
+        accounts: "id, isArchived",
+        recurringItems: "id, personId, categoryId, accountId, isActive, type, priority",
+        ledgerEntries:
+          "id, recurringItemId, [jalaliYear+jalaliMonth], [recurringItemId+jalaliYear+jalaliMonth], personId, categoryId, accountId, status, type",
+        cheques: "id, accountId, counterpartyPersonId, status, direction",
+        assetTypes: "id, code",
+        assetLots: "id, assetTypeId, direction",
+        rateSnapshots: "id, assetTypeId",
+        shoppingItems: "id, status, categoryId, [targetJalaliYear+targetJalaliMonth]",
+        jalaliYears: "year",
+        appSettings: "key",
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table("shoppingItems")
+          .toCollection()
+          .modify((item: ShoppingItem) => {
+            if (item.targetJalaliMonth == null) {
+              const d = item.purchasedJalaliDate ?? item.addedJalaliDate;
+              if (d) {
+                item.targetJalaliYear = d.year;
+                item.targetJalaliMonth = d.month;
+              }
+            }
+          });
+      });
   }
 }
