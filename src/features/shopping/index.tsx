@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { listShoppingItems, deleteShoppingItem } from "@/db/repositories/shopping";
+import { Plus, Pencil, Trash2, Ban, RotateCcw } from "lucide-react";
+import { listShoppingItems, deleteShoppingItem, updateShoppingItem } from "@/db/repositories/shopping";
 import { listCategories } from "@/db/repositories/categories";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MonthSwitcher } from "@/components/MonthSwitcher";
 import { formatRial, formatNumber } from "@/lib/format";
-import { monthLabel, toPersianDigits } from "@/domain/jalali";
+import { monthLabel, toPersianDigits, today } from "@/domain/jalali";
 import { useUiStore } from "@/stores/uiStore";
 import { ShoppingItemForm } from "@/features/shopping/ShoppingItemForm";
 import type { ShoppingItem, ShoppingStatus } from "@/types/entities";
@@ -76,10 +77,26 @@ export function ShoppingPage() {
     }
   };
 
+  const setStatus = async (item: ShoppingItem, status: ShoppingStatus) => {
+    const changes: Partial<ShoppingItem> = { status };
+    if (status === "purchased" && item.status !== "purchased") {
+      changes.purchasedJalaliDate = item.purchasedJalaliDate ?? today();
+    }
+    await updateShoppingItem(item.id, changes);
+  };
+
+  // Checklist toggle: tick = خریداری‌شده، برداشتن تیک = برنامه‌ریزی‌شده (هنوز نخریده)
+  const togglePurchased = (item: ShoppingItem, checked: boolean) =>
+    setStatus(item, checked ? "purchased" : "planned");
+
+  const toggleCancelled = (item: ShoppingItem) =>
+    setStatus(item, item.status === "cancelled" ? "planned" : "cancelled");
+
   const renderTable = (list: ShoppingItem[]) => (
     <table className="w-full text-sm">
       <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:bg-neutral-900/60 dark:text-neutral-400">
         <tr>
+          <th className="w-12 p-3 text-center">خرید</th>
           <th className="p-3 text-start">عنوان</th>
           <th className="p-3 text-start">دسته‌بندی</th>
           <th className="p-3 text-start">تعداد</th>
@@ -91,36 +108,72 @@ export function ShoppingPage() {
         </tr>
       </thead>
       <tbody>
-        {list.map((item) => (
-          <tr
-            key={item.id}
-            className="border-t border-neutral-100 transition-colors hover:bg-slate-50/70 dark:border-neutral-800 dark:hover:bg-neutral-800/40"
-          >
-            <td className="p-3 font-medium">{item.title}</td>
-            <td className="p-3 text-neutral-500 dark:text-neutral-400">{categoryName(item.categoryId) ?? "—"}</td>
-            <td className="p-3">{formatNumber(item.quantity)}</td>
-            <td className="p-3">{item.estimatedPrice ? formatRial(item.estimatedPrice) : "—"}</td>
-            <td className="p-3">{item.actualPrice ? formatRial(item.actualPrice) : "—"}</td>
-            <td className="p-3">{formatNumber(item.priority)}</td>
-            <td className="p-3">
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[item.status]}`}
-              >
-                {STATUS_LABELS[item.status]}
-              </span>
-            </td>
-            <td className="p-3">
-              <div className="flex justify-end gap-1">
-                <Button variant="ghost" size="sm" onClick={() => openEdit(item)} aria-label="ویرایش">
-                  <Pencil size={14} />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} aria-label="حذف">
-                  <Trash2 size={14} className="text-red-600" />
-                </Button>
-              </div>
-            </td>
-          </tr>
-        ))}
+        {list.map((item) => {
+          const cancelled = item.status === "cancelled";
+          const purchased = item.status === "purchased";
+          return (
+            <tr
+              key={item.id}
+              className={`border-t border-neutral-100 transition-colors hover:bg-slate-50/70 dark:border-neutral-800 dark:hover:bg-neutral-800/40 ${
+                cancelled ? "opacity-60" : ""
+              }`}
+            >
+              <td className="p-3 text-center">
+                <div className="flex justify-center">
+                  <Checkbox
+                    checked={purchased}
+                    onCheckedChange={(checked) => togglePurchased(item, checked)}
+                    aria-label="خریداری‌شده"
+                  />
+                </div>
+              </td>
+              <td className={`p-3 font-medium ${cancelled ? "line-through" : ""}`}>{item.title}</td>
+              <td className="p-3 text-neutral-500 dark:text-neutral-400">{categoryName(item.categoryId) ?? "—"}</td>
+              <td className="p-3">{formatNumber(item.quantity)}</td>
+              <td className="p-3">{item.estimatedPrice ? formatRial(item.estimatedPrice) : "—"}</td>
+              <td className="p-3">{item.actualPrice ? formatRial(item.actualPrice) : "—"}</td>
+              <td className="p-3">{formatNumber(item.priority)}</td>
+              <td className="p-3">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[item.status]}`}
+                >
+                  {STATUS_LABELS[item.status]}
+                </span>
+              </td>
+              <td className="p-3">
+                <div className="flex justify-end gap-1">
+                  {cancelled ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleCancelled(item)}
+                      aria-label="بازگردانی به لیست"
+                      title="بازگردانی به لیست"
+                    >
+                      <RotateCcw size={14} />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleCancelled(item)}
+                      aria-label="منصرف شدم"
+                      title="منصرف شدم"
+                    >
+                      <Ban size={14} className="text-amber-600" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(item)} aria-label="ویرایش">
+                    <Pencil size={14} />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} aria-label="حذف">
+                    <Trash2 size={14} className="text-red-600" />
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
