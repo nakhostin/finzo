@@ -10,6 +10,8 @@ import type {
   AssetLot,
   RateSnapshot,
   ShoppingItem,
+  Vehicle,
+  MaintenanceRecord,
   JalaliYearRecord,
 } from "@/types/entities";
 
@@ -29,6 +31,8 @@ export class AppDatabase extends Dexie {
   assetLots!: EntityTable<AssetLot, "id">;
   rateSnapshots!: EntityTable<RateSnapshot, "id">;
   shoppingItems!: EntityTable<ShoppingItem, "id">;
+  vehicles!: EntityTable<Vehicle, "id">;
+  maintenanceRecords!: EntityTable<MaintenanceRecord, "id">;
   jalaliYears!: EntityTable<JalaliYearRecord, "year">;
   appSettings!: EntityTable<AppSettingRecord, "key">;
 
@@ -103,5 +107,26 @@ export class AppDatabase extends Dexie {
             }
           });
       });
+
+    // v4: adds vehicle maintenance tracking — vehicles and their consumable
+    // service/replacement records (engine oil, tires, filters, ...). No amounts;
+    // this is a maintenance log, tracking dates and odometer readings only.
+    this.version(4).stores({
+      categories: "id, parentId, kind, isArchived",
+      people: "id, isActive",
+      accounts: "id, isArchived",
+      recurringItems: "id, personId, categoryId, accountId, isActive, type, priority",
+      ledgerEntries:
+        "id, recurringItemId, [jalaliYear+jalaliMonth], [recurringItemId+jalaliYear+jalaliMonth], personId, categoryId, accountId, status, type",
+      cheques: "id, accountId, counterpartyPersonId, status, direction",
+      assetTypes: "id, code",
+      assetLots: "id, assetTypeId, direction",
+      rateSnapshots: "id, assetTypeId",
+      shoppingItems: "id, status, categoryId, [targetJalaliYear+targetJalaliMonth]",
+      vehicles: "id, isArchived",
+      maintenanceRecords: "id, vehicleId, type",
+      jalaliYears: "year",
+      appSettings: "key",
+    });
   }
 }

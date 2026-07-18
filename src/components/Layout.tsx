@@ -7,6 +7,7 @@ import {
   Users,
   Coins,
   ShoppingCart,
+  Car,
   BarChart3,
   Settings,
 } from "lucide-react";
@@ -60,6 +61,7 @@ const NAV_ITEMS: Array<{
   { to: "/people", label: "اشخاص", icon: Users },
   { to: "/assets", label: "دارایی‌ها", icon: Coins },
   { to: "/shopping", label: "لیست خرید", icon: ShoppingCart },
+  { to: "/vehicle", label: "خودرو", icon: Car },
   { to: "/reports", label: "گزارش‌ها", icon: BarChart3 },
   { to: "/settings", label: "تنظیمات", icon: Settings },
 ];

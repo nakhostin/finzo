@@ -9,6 +9,7 @@ import { PersonDetail } from "@/features/people/PersonDetail";
 import { AssetsPage } from "@/features/assets";
 import { AssetDetail } from "@/features/assets/AssetDetail";
 import { ShoppingPage } from "@/features/shopping";
+import { VehiclePage } from "@/features/vehicle";
 import { ReportsPage } from "@/features/reports";
 import { SettingsPage } from "@/features/settings";
 
@@ -26,6 +27,7 @@ const routes = [
       { path: "assets", element: <AssetsPage /> },
       { path: "assets/:id", element: <AssetDetail /> },
       { path: "shopping", element: <ShoppingPage /> },
+      { path: "vehicle", element: <VehiclePage /> },
       { path: "reports", element: <ReportsPage /> },
       { path: "settings", element: <SettingsPage /> },
     ],

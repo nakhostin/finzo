@@ -158,6 +158,29 @@ export interface ShoppingItem {
   notes?: string;
 }
 
+export interface Vehicle {
+  id: ID;
+  name: string; // مثلا: پژو ۲۰۶
+  plateNumber?: string; // شماره پلاک
+  currentKm?: number; // کیلومتر فعلی خودرو
+  currentKmJalaliDate?: JalaliDate; // تاریخ آخرین ثبت کیلومتر فعلی
+  notes?: string;
+  isArchived?: boolean;
+}
+
+/** یک رکورد تعویض/سرویس لوازم مصرفی خودرو — بدون مبلغ، فقط اطلاعات نگه‌داری. */
+export interface MaintenanceRecord {
+  id: ID;
+  vehicleId: ID;
+  type: string; // نوع سرویس: روغن موتور، لاستیک، فیلتر روغن، تسمه تایم و...
+  brand?: string; // نام یا برند محصول (مثلا: بهران، ایرانول)
+  doneJalaliDate: JalaliDate; // تاریخ انجام
+  doneKm?: number; // کیلومتر خودرو هنگام انجام
+  nextJalaliDate?: JalaliDate; // تاریخ تعویض بعدی
+  nextKm?: number; // کیلومتر تعویض بعدی
+  notes?: string;
+}
+
 export interface JalaliYearRecord {
   year: number;
   isActive: boolean;
