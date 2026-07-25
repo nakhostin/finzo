@@ -55,7 +55,7 @@ const NAV_ITEMS: Array<{
   end?: boolean;
 }> = [
   { to: "/", label: "داشبورد", icon: LayoutDashboard, end: true },
-  { to: "/checklist", label: "چک‌لیست ماه", icon: ListChecks },
+  { to: "/checklist", label: "چک‌لیست", icon: ListChecks },
   { to: "/recurring", label: "مدیریت آیتم‌ها", icon: Repeat },
   { to: "/cheques", label: "چک‌ها", icon: Landmark },
   { to: "/people", label: "اشخاص", icon: Users },

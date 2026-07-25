@@ -6,6 +6,22 @@ export function listEntriesForMonth(year: number, month: number): Promise<Ledger
   return db.ledgerEntries.where({ jalaliYear: year, jalaliMonth: month }).toArray();
 }
 
+/**
+ * Every entry falling inside an inclusive (year, month) range. The compound
+ * [jalaliYear+jalaliMonth] index orders year-major then month, so a plain
+ * `between` over the two bounds is exactly the calendar range — no per-month
+ * fan-out needed.
+ */
+export function listEntriesForRange(
+  from: { year: number; month: number },
+  to: { year: number; month: number },
+): Promise<LedgerEntry[]> {
+  return db.ledgerEntries
+    .where("[jalaliYear+jalaliMonth]")
+    .between([from.year, from.month], [to.year, to.month], true, true)
+    .toArray();
+}
+
 export function listEntriesForPerson(personId: string): Promise<LedgerEntry[]> {
   return db.ledgerEntries.where("personId").equals(personId).toArray();
 }
@@ -36,6 +52,16 @@ export async function setEntryStatus(
     ...(paidJalaliDate ? { paidJalaliDate } : {}),
     ...(amountActual !== undefined ? { amountActual } : {}),
   });
+}
+
+export function setEntryPriority(id: string, isPriority: boolean): Promise<number> {
+  return db.ledgerEntries.update(id, { isPriority });
+}
+
+/** Marks/unmarks a whole set of entries at once (the checklist's "select all" actions). */
+export async function setEntriesPriority(ids: string[], isPriority: boolean): Promise<void> {
+  if (ids.length === 0) return;
+  await db.ledgerEntries.where("id").anyOf(ids).modify({ isPriority });
 }
 
 export interface CashFlowBreakdown {

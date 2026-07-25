@@ -81,6 +81,8 @@ export interface LedgerEntry {
   amountActual?: number;
   status: EntryStatus;
   paidJalaliDate?: JalaliDate;
+  /** User-marked "this one matters" flag, used by the checklist to sum a hand-picked subset. */
+  isPriority?: boolean;
   reminderDaysBefore?: number;
   notes?: string;
 }
